@@ -1,0 +1,1 @@
+# threejs-transform-dirty-flag
