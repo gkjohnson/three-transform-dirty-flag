@@ -4,6 +4,8 @@ import { expandBox } from './utils.js';
 // TODO: This will not interop with the current THREE.Object3D object because it
 // assumes that all the new fields are available
 
+// TODO: Add a callback or list for tracking all the objects that change
+
 const DirtyTransformMixin =
     base => class extends base {
 
@@ -98,12 +100,15 @@ const DirtyTransformMixin =
 
         }
 
+        /* Overrides */
         updateMatrix() {
             this.updateTransform();
         }
+
         updateMatrixWorld() {
             this.updateTransform();
         }
+
         updateWorldMatrix() {
             this.updateTransform();
         }
