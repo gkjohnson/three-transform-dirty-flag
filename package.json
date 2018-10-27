@@ -1,0 +1,19 @@
+{
+  "name": "threejs-transform-dirty-flag",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gkjohnson/threejs-transform-dirty-flag.git"
+  },
+  "author": "Garrett Johnson <garrett.kjohnson@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gkjohnson/threejs-transform-dirty-flag/issues"
+  },
+  "homepage": "https://github.com/gkjohnson/threejs-transform-dirty-flag#readme"
+}
