@@ -1,5 +1,27 @@
+import { Box3, Sphere } from 'three';
+import { expandBox } from './utils.js';
+
+// TODO: This will not interop with the current THREE.Object3D object because it
+// assumes that all the new fields are available
+
 const DirtyTransformMixin =
     base => class extends base {
+
+        get boundingBox() {
+            if ('geometry' in this) {
+                return (this.geometry && this.geometry.boundingBox) || null;
+            } else {
+                return this._boundingBox;
+            }
+        }
+
+        get boundingSphere() {
+            if ('geometry' in this) {
+                return (this.geometry && this.geometry.boundingSphere) || null;
+            } else {
+                return this._boundingSphere || null;
+            }
+        }
 
         constructor() {
 
@@ -139,15 +161,34 @@ const DirtyTransformMixin =
 
         updateBounds() {
 
-            if (this.boundsDirty) {
+            if (!('geometry' in this) && this.boundsDirty) {
 
-                // TODO: Each object3d needs a boundingSphere and a boundingBox
-                // Meshes should probably derive their bounding shapes from the geometry
-                // and assume they're up to date.
-                // Otherwise if bounding shapes aren't available then they should be created
-                // here? Raycasting will need to be updated to account for the new bounds
+                const children = this.children;
+                const bb = this._boundingBox || new Box3();
+                const sp = this._boundingSphere || new Sphere();
+
+                if (children.length !== 0) {
+                    bb.min.set(1, 1, 1).multiplyScalar(Infinity);
+                    bb.max.set(1, 1, 1).multiplyScalar(-Infinity);
+
+                    for (let i = 0; i < children; i++) {
+                        const c = children[i];
+                        c.updateBounds();
+
+                        expandBox(bb, c.boundingBox, c.matrix);
+                    }
+
+                    bb.getBoundingSphere(sp);
+                } else {
+                    bb.min.set(0, 0, 0);
+                    bb.max.set(0, 0, 0);
+                    sp.radius = 0;
+                    sp.center.set(0, 0, 0);
+                }
 
             }
+
+            this.boundsDirty = false;
 
         }
 
