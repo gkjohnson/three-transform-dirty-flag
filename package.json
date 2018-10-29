@@ -2,9 +2,10 @@
   "name": "threejs-transform-dirty-flag",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "umd/index.js",
   "scripts": {
     "build": "rollup -c",
+    "lint": "eslint ./src/**/*.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
