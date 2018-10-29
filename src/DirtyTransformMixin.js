@@ -5,10 +5,6 @@ import { getActiveDirtyTracker } from './DirtyTracker.js';
 // TODO: This will not interop with the current THREE.Object3D object because it
 // assumes that all the new fields are available
 
-// TODO: Add a callback or list for tracking all the objects that change
-
-// TODO: Add a stateful API to flag objects to add to a change bin / register a change callback
-
 const DirtyTransformMixin =
     base => class extends base {
 
