@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,7 +21,9 @@
     "three": "^0.97.0"
   },
   "devDependencies": {
+    "eslint": "^5.8.0",
     "jest": "^23.6.0",
-    "jest-cli": "^23.6.0"
+    "jest-cli": "^23.6.0",
+    "rollup": "^0.66.6"
   }
 }
