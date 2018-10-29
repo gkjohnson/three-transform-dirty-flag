@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c",
     "lint": "eslint ./src/**/*.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "rollup -c && jest"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "eslint": "^5.8.0",
     "jest": "^23.6.0",
     "jest-cli": "^23.6.0",
-    "rollup": "^0.66.6"
+    "rollup": "^0.66.6",
+    "three": "^0.97.0"
   }
 }

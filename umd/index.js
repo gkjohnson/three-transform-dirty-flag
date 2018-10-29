@@ -235,7 +235,12 @@
 
                     // Update local and world matrices
                     this.matrix.compose(this.position, this.quaternion, this.scale);
-                    this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+
+                    if (this.parent) {
+                        this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+                    } else {
+                        this.matrixWorld.copy(this.matrix);
+                    }
 
                     this.transformDirty = false;
                     this.setBoundsDirty();
