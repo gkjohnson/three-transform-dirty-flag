@@ -1,5 +1,6 @@
 import { Box3, Sphere } from 'three';
 import { expandBox } from './utils.js';
+import { getActiveDirtyTracker } from './DirtyTracker.js';
 
 // TODO: This will not interop with the current THREE.Object3D object because it
 // assumes that all the new fields are available
@@ -49,6 +50,9 @@ const DirtyTransformMixin =
                 });
 
             };
+
+            // The dirty tracker this object is being tracked by.
+            this.dirtyTracker = getActiveDirtyTracker();
 
             // indicates that the position, scale, rotation has changed
             // and the local and world matrices need to be updated.
@@ -121,6 +125,8 @@ const DirtyTransformMixin =
             if (this.transformDirty === false) {
 
                 this.transformDirty = true;
+                this.dirtyTracker.onTransformDirty(this);
+
                 const children = this.children;
                 for (let i = 0; i < children; i++) {
 
@@ -158,6 +164,8 @@ const DirtyTransformMixin =
             if (this.boundsDirty === false) {
 
                 this.boundsDirty = true;
+                this.dirtyTracker.onBoundsDirty(this);
+
                 if (this.parent) {
                     this.parent.setBoundsDirty();
                 }

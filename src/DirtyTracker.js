@@ -1,4 +1,4 @@
-class DirtyBin {
+class DirtyTracker {
 
     constructor() {
         this.dirtyTransforms = [];
@@ -46,15 +46,15 @@ class DirtyBin {
 
 }
 
-const DefaultDirtyBin = new DirtyBin();
-let currentDirtyBin = DefaultDirtyBin;
+const DefaultDirtyTracker = new DirtyTracker();
+let currentDirtyTracker = DefaultDirtyTracker;
 
-function setActiveDirtyBin(db) {
-    currentDirtyBin = db;
+function setActiveDirtyTracker(db) {
+    currentDirtyTracker = db;
 }
 
-function getActiveDirtyBin() {
-    return currentDirtyBin;
+function getActiveDirtyTracker() {
+    return currentDirtyTracker;
 }
 
-export { DirtyBin, DefaultDirtyBin, setActiveDirtyBin, getActiveDirtyBin };
+export { DirtyTracker, DefaultDirtyTracker, setActiveDirtyTracker, getActiveDirtyTracker };
