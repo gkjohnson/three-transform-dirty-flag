@@ -1,7 +1,7 @@
 {
   "name": "threejs-transform-dirty-flag",
   "version": "1.0.0",
-  "description": "",
+  "description": "Extension for efficiently keeping matrices and bounds up to date.",
   "main": "umd/index.js",
   "scripts": {
     "build": "rollup -c",
