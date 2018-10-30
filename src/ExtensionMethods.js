@@ -47,9 +47,9 @@ const dirtyTransformFunctions = {
             this.dirtyTracker.onTransformDirty(this);
 
             const children = this.children;
-            for (let i = 0; i < children; i++) {
+            for (let i = 0; i < children.length; i++) {
 
-                children.setTransformDirty(false);
+                children[i].setTransformDirty();
 
             }
 
@@ -103,15 +103,19 @@ const dirtyTransformFunctions = {
         if (!('geometry' in this) && this.boundsDirty) {
 
             const children = this.children;
-            const bb = this._boundingBox || new Box3();
-            const sp = this._boundingSphere || new Sphere();
+            this._boundingBox = this._boundingBox || new Box3();
+            this._boundingSphere = this._boundingSphere || new Sphere();
+
+            const bb = this._boundingBox;
+            const sp = this._boundingSphere;
 
             if (children.length !== 0) {
                 bb.min.set(1, 1, 1).multiplyScalar(Infinity);
                 bb.max.set(1, 1, 1).multiplyScalar(-Infinity);
 
-                for (let i = 0; i < children; i++) {
+                for (let i = 0; i < children.length; i++) {
                     const c = children[i];
+                    c.updateTransform();
                     c.updateBounds();
 
                     expandBox(bb, c.boundingBox, c.matrix);
@@ -135,6 +139,9 @@ const dirtyTransformFunctions = {
 
 const applyDirtyMembers =
     obj => {
+
+        // Add the member functions
+        Object.assign(obj, dirtyTransformFunctions);
 
         // Define getters and setters
         obj._parent = obj.parent;
@@ -166,8 +173,11 @@ const applyDirtyMembers =
                 },
 
                 set(p) {
-                    if (this._parent !== p) {
-                        this._parent.setBoundsDirty();
+                    if (this.parent !== p) {
+                        if (this._parent) {
+                            this._parent.setBoundsDirty();
+                        }
+
                         this._parent = p;
                         this.setTransformDirty();
                     }
@@ -186,7 +196,8 @@ const applyDirtyMembers =
 
         // indicates that the transform has changed and the bounds are
         // out of sync
-        obj.boundsDirty = false;
+        obj.boundsDirty = true;
+        obj.updateBounds();
 
         // Add change callbacks
         // Watch for dirty changes to the transform
@@ -213,8 +224,6 @@ const applyDirtyMembers =
         bindUpdateToField(obj, obj.scale, 'x');
         bindUpdateToField(obj, obj.scale, 'y');
         bindUpdateToField(obj, obj.scale, 'z');
-
-        Object.assign(obj, dirtyTransformFunctions);
 
     };
 
