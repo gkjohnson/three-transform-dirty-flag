@@ -94,87 +94,162 @@
     // TODO: This will not interop with the current THREE.Object3D object because it
     // assumes that all the new fields are available
 
-    const DirtyTransformMixin =
-        base => class extends base {
+    function bindUpdateToField(self, obj, field) {
 
-            get boundingBox() {
-                if ('geometry' in this) {
-                    return (this.geometry && this.geometry.boundingBox) || null;
-                } else {
-                    return this._boundingBox;
+        const str = `_${ field }`;
+        Object.defineProperty(obj, field, {
+
+            get() {
+                return this[str];
+            },
+
+            set(v) {
+                this[str] = v;
+                self.setTransformDirty();
+            },
+
+        });
+
+    }
+
+    const dirtyTransformFunctions = {
+
+        /* Overrides */
+        updateMatrix: function() {
+            this.updateTransform();
+        },
+
+        updateMatrixWorld: function() {
+            this.updateTransform();
+        },
+
+        updateWorldMatrix: function() {
+            this.updateTransform();
+        },
+
+        /* Private Functions */
+        setTransformDirty: function() {
+
+            if (this.transformDirty === false) {
+
+                this.transformDirty = true;
+                this.dirtyTracker.onTransformDirty(this);
+
+                const children = this.children;
+                for (let i = 0; i < children; i++) {
+
+                    children.setTransformDirty(false);
+
                 }
+
             }
 
-            get boundingSphere() {
-                if ('geometry' in this) {
-                    return (this.geometry && this.geometry.boundingSphere) || null;
+        },
+
+        updateTransform: function() {
+
+            if (this.transformDirty) {
+
+                if (this.parent) {
+
+                    this.parent.updateTransform();
+
+                }
+
+                // Update local and world matrices
+                this.matrix.compose(this.position, this.quaternion, this.scale);
+
+                if (this.parent) {
+                    this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
                 } else {
-                    return this._boundingSphere || null;
-                }
-            }
-
-            constructor() {
-
-                super(...arguments);
-
-                const self = this;
-                function bindUpdateToField(o, f) {
-
-                    const str = `_${ f }`;
-                    Object.defineProperty(o, f, {
-
-                        get() {
-                            return this[str];
-                        },
-
-                        set(v) {
-                            this[str] = v;
-                            self.setTransformDirty();
-                        },
-
-                    });
-
+                    this.matrixWorld.copy(this.matrix);
                 }
 
-                // The dirty tracker this object is being tracked by.
-                this.dirtyTracker = getActiveDirtyTracker();
-
-                // indicates that the position, scale, rotation has changed
-                // and the local and world matrices need to be updated.
                 this.transformDirty = false;
+                this.setBoundsDirty();
 
-                // indicates that the transform has changed and the bounds are
-                // out of sync
-                this.boundsDirty = false;
+            }
 
-                // Watch for dirty changes to the transform
-                // Rotation
-                const ogRotationChange = this.rotation.onChangeCallback.bind(this.rotation);
-                this.rotation.onChange(() => {
-                    ogRotationChange();
-                    this.setTransformDirty();
-                });
+        },
 
-                // Quaternion
-                const ogQuaternionChange = this.quaternion.onChangeCallback.bind(this.quaternion);
-                this.quaternion.onChange(() => {
-                    ogQuaternionChange();
-                    this.setTransformDirty();
-                });
+        setBoundsDirty: function() {
 
-                // Position
-                bindUpdateToField(this.position, 'x');
-                bindUpdateToField(this.position, 'y');
-                bindUpdateToField(this.position, 'z');
+            if (this.boundsDirty === false) {
 
-                // Scale
-                bindUpdateToField(this.scale, 'x');
-                bindUpdateToField(this.scale, 'y');
-                bindUpdateToField(this.scale, 'z');
+                this.boundsDirty = true;
+                this.dirtyTracker.onBoundsDirty(this);
 
-                // Add this.parent override
-                Object.defineProperty(this, 'parent', {
+                if (this.parent) {
+                    this.parent.setBoundsDirty();
+                }
 
+            }
+
+        },
+
+        updateBounds: function() {
+
+            if (!('geometry' in this) && this.boundsDirty) {
+
+                const children = this.children;
+                const bb = this._boundingBox || new three.Box3();
+                const sp = this._boundingSphere || new three.Sphere();
+
+                if (children.length !== 0) {
+                    bb.min.set(1, 1, 1).multiplyScalar(Infinity);
+                    bb.max.set(1, 1, 1).multiplyScalar(-Infinity);
+
+                    for (let i = 0; i < children; i++) {
+                        const c = children[i];
+                        c.updateBounds();
+
+                        expandBox(bb, c.boundingBox, c.matrix);
+                    }
+
+                    bb.getBoundingSphere(sp);
+                } else {
+                    bb.min.set(0, 0, 0);
+                    bb.max.set(0, 0, 0);
+                    sp.radius = 0;
+                    sp.center.set(0, 0, 0);
+                }
+
+            }
+
+            this.boundsDirty = false;
+
+        },
+
+    };
+
+    const applyDirtyMembers =
+        obj => {
+
+            // Define getters and setters
+            obj._parent = obj.parent;
+            Object.defineProperties(obj, {
+
+                boundingBox: {
+                    get() {
+                        if ('geometry' in this) {
+                            return (this.geometry && this.geometry.boundingBox) || null;
+                        } else {
+                            return this._boundingBox;
+                        }
+                    },
+                },
+
+                boundingSphere: {
+                    get() {
+                        if ('geometry' in this) {
+                            return (this.geometry && this.geometry.boundingSphere) || null;
+                        } else {
+                            return this._boundingSphere || null;
+                        }
+                    },
+                },
+
+                parent: {
                     get() {
                         return this._parent;
                     },
@@ -186,120 +261,82 @@
                             this.setTransformDirty();
                         }
                     },
+                },
 
-                });
+            });
 
-            }
+            // Define member variables
+            // The dirty tracker this object is being tracked by.
+            obj.dirtyTracker = getActiveDirtyTracker();
 
-            /* Overrides */
-            updateMatrix() {
-                this.updateTransform();
-            }
+            // indicates that the position, scale, rotation has changed
+            // and the local and world matrices need to be updated.
+            obj.transformDirty = false;
 
-            updateMatrixWorld() {
-                this.updateTransform();
-            }
+            // indicates that the transform has changed and the bounds are
+            // out of sync
+            obj.boundsDirty = false;
 
-            updateWorldMatrix() {
-                this.updateTransform();
-            }
+            // Add change callbacks
+            // Watch for dirty changes to the transform
+            // Rotation
+            const ogRotationChange = obj.rotation.onChangeCallback.bind(obj.rotation);
+            obj.rotation.onChange(() => {
+                ogRotationChange();
+                obj.setTransformDirty();
+            });
 
-            /* Private Functions */
-            setTransformDirty() {
+            // Quaternion
+            const ogQuaternionChange = obj.quaternion.onChangeCallback.bind(obj.quaternion);
+            obj.quaternion.onChange(() => {
+                ogQuaternionChange();
+                obj.setTransformDirty();
+            });
 
-                if (this.transformDirty === false) {
+            // Position
+            bindUpdateToField(obj, obj.position, 'x');
+            bindUpdateToField(obj, obj.position, 'y');
+            bindUpdateToField(obj, obj.position, 'z');
 
-                    this.transformDirty = true;
-                    this.dirtyTracker.onTransformDirty(this);
+            // Scale
+            bindUpdateToField(obj, obj.scale, 'x');
+            bindUpdateToField(obj, obj.scale, 'y');
+            bindUpdateToField(obj, obj.scale, 'z');
 
-                    const children = this.children;
-                    for (let i = 0; i < children; i++) {
+            Object.assign(obj, dirtyTransformFunctions);
 
-                        children.setTransformDirty(false);
+        };
 
-                    }
+    const DirtyTransformMixin =
+        base => class extends base {
 
-                }
+            constructor() {
 
-            }
+                super(...arguments);
 
-            updateTransform() {
+                applyDirtyMembers(this);
 
-                if (this.transformDirty) {
-
-                    if (this.parent) {
-
-                        this.parent.updateTransform();
-
-                    }
-
-                    // Update local and world matrices
-                    this.matrix.compose(this.position, this.quaternion, this.scale);
-
-                    if (this.parent) {
-                        this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
-                    } else {
-                        this.matrixWorld.copy(this.matrix);
-                    }
-
-                    this.transformDirty = false;
-                    this.setBoundsDirty();
-
-                }
-
-            }
-
-            setBoundsDirty() {
-
-                if (this.boundsDirty === false) {
-
-                    this.boundsDirty = true;
-                    this.dirtyTracker.onBoundsDirty(this);
-
-                    if (this.parent) {
-                        this.parent.setBoundsDirty();
-                    }
-
-                }
-
-            }
-
-            updateBounds() {
-
-                if (!('geometry' in this) && this.boundsDirty) {
-
-                    const children = this.children;
-                    const bb = this._boundingBox || new three.Box3();
-                    const sp = this._boundingSphere || new three.Sphere();
-
-                    if (children.length !== 0) {
-                        bb.min.set(1, 1, 1).multiplyScalar(Infinity);
-                        bb.max.set(1, 1, 1).multiplyScalar(-Infinity);
-
-                        for (let i = 0; i < children; i++) {
-                            const c = children[i];
-                            c.updateBounds();
-
-                            expandBox(bb, c.boundingBox, c.matrix);
-                        }
-
-                        bb.getBoundingSphere(sp);
-                    } else {
-                        bb.min.set(0, 0, 0);
-                        bb.max.set(0, 0, 0);
-                        sp.radius = 0;
-                        sp.center.set(0, 0, 0);
-                    }
-
-                }
-
-                this.boundsDirty = false;
-
+                this.updateBounds();
             }
 
         };
 
-    var DirtyObject3D = DirtyTransformMixin(three.Object3D);
+    const ApplyDirtyTransform = (obj, dirtyTracker = null) => {
+
+        const ogDt = getActiveDirtyTracker();
+        dirtyTracker = dirtyTracker || ogDt();
+
+        setActiveDirtyTracker(dirtyTracker);
+
+        obj.traverse(c => {
+            applyDirtyMembers(c);
+        });
+
+        setActiveDirtyTracker(ogDt);
+
+    };
+
+    const DirtyObject3D = DirtyTransformMixin(three.Object3D);
 
     exports.DirtyTracker = DirtyTracker;
     exports.DefaultDirtyTracker = DefaultDirtyTracker;
