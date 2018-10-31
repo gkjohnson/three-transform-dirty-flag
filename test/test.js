@@ -60,7 +60,7 @@ describe('DirtyTracker', () => {
 
         setActiveDirtyTracker(dt);
         obj = new DirtyObject3D();
-        obj.setTransformDirty();
+        obj.setWorldTransformDirty();
 
         expect(calledTransformDirty).toBeTruthy();
         expect(dt.dirtyTransforms.length).toEqual(1);
@@ -106,7 +106,8 @@ describe('DirtyObject3d', () => {
     it('should have all the expected fields', () => {
 
         const o = new DirtyObject3D();
-        expect(o).toHaveProperty('transformDirty');
+        expect(o).toHaveProperty('worldTransformDirty');
+        expect(o).toHaveProperty('localTransformDirty');
         expect(o).toHaveProperty('boundsDirty');
         expect(o).toHaveProperty('dirtyTracker');
 
@@ -119,17 +120,20 @@ describe('DirtyObject3d', () => {
 
         const fields = ['x', 'y', 'z'];
         const o = new DirtyObject3D();
-        expect(o.transformDirty).toBeFalsy();
+        expect(o.localTransformDirty).toBeFalsy();
+        expect(o.worldTransformDirty).toBeFalsy();
 
         // Test Rotation
         o.rotation.set(1, 1, 1);
-        expect(o.transformDirty).toBeTruthy();
+        expect(o.localTransformDirty).toBeTruthy();
+        expect(o.worldTransformDirty).toBeTruthy();
 
         o.updateTransform();
 
         // Test Quaternion
         o.quaternion.set(1, 0, 0, 0);
-        expect(o.transformDirty).toBeTruthy();
+        expect(o.localTransformDirty).toBeTruthy();
+        expect(o.worldTransformDirty).toBeTruthy();
 
         o.updateTransform();
 
@@ -137,7 +141,8 @@ describe('DirtyObject3d', () => {
         fields.forEach(f => {
 
             o.position[f] = 10;
-            expect(o.transformDirty).toBeTruthy();
+            expect(o.localTransformDirty).toBeTruthy();
+            expect(o.worldTransformDirty).toBeTruthy();
 
             o.updateTransform();
 
@@ -147,7 +152,8 @@ describe('DirtyObject3d', () => {
         fields.forEach(f => {
 
             o.scale[f] = 10;
-            expect(o.transformDirty).toBeTruthy();
+            expect(o.localTransformDirty).toBeTruthy();
+            expect(o.worldTransformDirty).toBeTruthy();
 
             o.updateTransform();
 
@@ -158,19 +164,18 @@ describe('DirtyObject3d', () => {
     it('should mark bounds as dirty once the transform is updated', () => {
 
         const o = new DirtyObject3D();
-        expect(o.transformDirty).toBeFalsy();
+        expect(o.localTransformDirty).toBeFalsy();
+        expect(o.worldTransformDirty).toBeFalsy();
         expect(o.boundsDirty).toBeFalsy();
 
         o.position.x = 1;
-        expect(o.transformDirty).toBeTruthy();
+        expect(o.localTransformDirty).toBeTruthy();
+        expect(o.worldTransformDirty).toBeTruthy();
         expect(o.boundsDirty).toBeFalsy();
 
         o.updateTransform();
-        expect(o.transformDirty).toBeFalsy();
-        expect(o.boundsDirty).toBeTruthy();
-
-        o.updateBounds();
-        expect(o.transformDirty).toBeFalsy();
+        expect(o.localTransformDirty).toBeFalsy();
+        expect(o.worldTransformDirty).toBeFalsy();
         expect(o.boundsDirty).toBeFalsy();
 
     });
@@ -201,69 +206,126 @@ describe('DirtyObject3d', () => {
             cb1.add(cb2);
 
             // The objects should be dirtied after being added to an object
-            root.traverse(c => c !== root && expect(c.transformDirty).toBeTruthy());
-            tracker.updateAll();
-            root.traverse(c => expect(c.transformDirty).toBeFalsy());
+            expect(root.boundsDirty).toBeTruthy();
+            root.traverse(c => {
 
+                if (c !== root) {
+
+                    expect(c.worldTransformDirty).toBeTruthy();
+                    expect(c.localTransformDirty).toBeFalsy();
+
+                }
+
+            });
+
+            tracker.updateAll();
+
+            expect(root.boundsDirty).toBeFalsy();
+            root.traverse(c => {
+
+                if (c !== root) {
+
+                    expect(c.boundsDirty).toBeFalsy();
+                    expect(c.worldTransformDirty).toBeFalsy();
+                    expect(c.localTransformDirty).toBeFalsy();
+
+                }
+
+            });
         });
 
         afterEach(() => {
+
             setActiveDirtyTracker(DefaultDirtyTracker);
+
         });
 
         it('should dirty child transforms when the parent moves', () => {
 
-            root.traverse(c => expect(c.transformDirty).toBeFalsy());
+            root.traverse(c => {
 
+                expect(c.worldTransformDirty).toBeFalsy();
+                expect(c.localTransformDirty).toBeFalsy();
+
+            });
             root.position.x = 10;
             root.position.y = 10;
             root.position.z = 10;
-            root.traverse(c => expect(c.transformDirty).toBeTruthy());
+            root.traverse(c => {
+
+                expect(c.worldTransformDirty).toBeTruthy();
+
+                if (c === root) {
+
+                    expect(c.localTransformDirty).toBeTruthy();
+
+                } else {
+
+                    expect(c.localTransformDirty).toBeFalsy();
+
+                }
+
+            });
             expect(tracker.dirtyTransforms.length).toEqual(5);
 
             // Update one child
             ca2.updateTransform();
             // A-leg
-            expect(ca2.boundsDirty).toBeTruthy();
-            expect(ca2.transformDirty).toBeFalsy();
-
-            expect(ca1.boundsDirty).toBeTruthy();
-            expect(ca1.transformDirty).toBeFalsy();
-
-            expect(root.boundsDirty).toBeTruthy();
-            expect(root.transformDirty).toBeFalsy();
-
-            // B-leg
-            expect(cb2.boundsDirty).toBeFalsy();
-            expect(cb2.transformDirty).toBeTruthy();
-
-            expect(cb1.boundsDirty).toBeFalsy();
-            expect(cb1.transformDirty).toBeTruthy();
-
-            // Update root bounds
-            root.updateBounds();
-            // A-leg
             expect(ca2.boundsDirty).toBeFalsy();
-            expect(ca2.transformDirty).toBeFalsy();
+            expect(ca2.worldTransformDirty).toBeFalsy();
+            expect(ca2.localTransformDirty).toBeFalsy();
 
             expect(ca1.boundsDirty).toBeFalsy();
-            expect(ca1.transformDirty).toBeFalsy();
+            expect(ca1.worldTransformDirty).toBeFalsy();
+            expect(ca1.localTransformDirty).toBeFalsy();
 
             expect(root.boundsDirty).toBeFalsy();
-            expect(root.transformDirty).toBeFalsy();
+            expect(root.worldTransformDirty).toBeFalsy();
+            expect(root.localTransformDirty).toBeFalsy();
 
             // B-leg
             expect(cb2.boundsDirty).toBeFalsy();
-            expect(cb2.transformDirty).toBeFalsy();
+            expect(cb2.worldTransformDirty).toBeTruthy();
+            expect(cb2.localTransformDirty).toBeFalsy();
 
             expect(cb1.boundsDirty).toBeFalsy();
-            expect(cb1.transformDirty).toBeFalsy();
+            expect(cb1.worldTransformDirty).toBeTruthy();
+            expect(cb1.localTransformDirty).toBeFalsy();
+
+            // move the root so world transforms are out of date
+            ca2.position.x = -5;
+            expect(ca2.boundsDirty).toBeFalsy();
+            expect(ca2.worldTransformDirty).toBeTruthy();
+            expect(ca2.localTransformDirty).toBeTruthy();
+
+            expect(ca1.boundsDirty).toBeTruthy();
+            expect(ca1.worldTransformDirty).toBeFalsy();
+            expect(ca1.localTransformDirty).toBeFalsy();
+
+            expect(root.boundsDirty).toBeTruthy();
+            expect(root.worldTransformDirty).toBeFalsy();
+            expect(root.localTransformDirty).toBeFalsy();
+
+            // B-leg
+            expect(cb2.boundsDirty).toBeFalsy();
+            expect(cb2.worldTransformDirty).toBeTruthy();
+            expect(cb2.localTransformDirty).toBeFalsy();
+
+            expect(cb1.boundsDirty).toBeFalsy();
+            expect(cb1.worldTransformDirty).toBeTruthy();
+            expect(cb1.localTransformDirty).toBeFalsy();
 
         });
 
         it.skip('more complex tree updates', () => {});
 
     });
+
+});
+
+describe('Bounds', () => {
+
+    it.skip('should properly encapsulate the children', () => {});
 
 });
 

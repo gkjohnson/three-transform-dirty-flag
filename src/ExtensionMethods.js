@@ -16,7 +16,7 @@ function bindUpdateToField(self, obj, field) {
 
         set(v) {
             this[str] = v;
-            self.setTransformDirty();
+            self.setLocalTransformDirty();
         },
 
     });
@@ -38,61 +38,31 @@ const dirtyTransformFunctions = {
         this.updateTransform();
     },
 
-    /* Private Functions */
-    setTransformDirty: function() {
+    /* Public Functions */
+    updateTransform: function() {
 
-        if (this.transformDirty === false) {
+        if (this.localTransformDirty) {
 
-            this.transformDirty = true;
-            this.dirtyTracker.onTransformDirty(this);
-
-            const children = this.children;
-            for (let i = 0; i < children.length; i++) {
-
-                children[i].setTransformDirty();
-
-            }
+            // Update local and world matrices
+            this.matrix.compose(this.position, this.quaternion, this.scale);
+            this.localTransformDirty = false;
 
         }
 
-    },
-
-    updateTransform: function() {
-
-        if (this.transformDirty) {
+        if (this.worldTransformDirty) {
 
             if (this.parent) {
 
                 this.parent.updateTransform();
-
-            }
-
-            // Update local and world matrices
-            this.matrix.compose(this.position, this.quaternion, this.scale);
-
-            if (this.parent) {
                 this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+
             } else {
+
                 this.matrixWorld.copy(this.matrix);
+
             }
 
-            this.transformDirty = false;
-            this.setBoundsDirty();
-
-        }
-
-    },
-
-    setBoundsDirty: function() {
-
-        if (this.boundsDirty === false) {
-
-            this.boundsDirty = true;
-            this.dirtyTracker.onBoundsDirty(this);
-
-            if (this.parent) {
-                this.parent.setBoundsDirty();
-            }
+            this.worldTransformDirty = false;
 
         }
 
@@ -132,6 +102,59 @@ const dirtyTransformFunctions = {
         }
 
         this.boundsDirty = false;
+
+    },
+
+    /* Private Functions */
+    setLocalTransformDirty: function() {
+
+        if (this.localTransformDirty === false) {
+
+            this.localTransformDirty = true;
+            this.setWorldTransformDirty();
+
+            if (this.parent) {
+
+                this.parent.setBoundsDirty();
+
+            }
+
+        }
+
+    },
+
+    setWorldTransformDirty: function() {
+
+        if (this.worldTransformDirty === false) {
+
+            this.worldTransformDirty = true;
+            this.dirtyTracker.onTransformDirty(this);
+
+            const children = this.children;
+            for (let i = 0; i < children.length; i++) {
+
+                children[i].setWorldTransformDirty();
+
+            }
+
+        }
+
+    },
+
+    setBoundsDirty: function() {
+
+        if (this.boundsDirty === false) {
+
+            this.boundsDirty = true;
+            this.dirtyTracker.onBoundsDirty(this);
+
+            if (this.parent) {
+
+                this.parent.setBoundsDirty();
+
+            }
+
+        }
 
     },
 
@@ -178,9 +201,19 @@ const applyDirtyMembers =
                             this._parent.setBoundsDirty();
                         }
 
+                        if (p) {
+                            p.setBoundsDirty();
+                        }
+
                         this._parent = p;
-                        this.setTransformDirty();
+                        this.setWorldTransformDirty();
                     }
+                },
+            },
+
+            transformDirty: {
+                get() {
+                    return this.worldTransformDirty || this.localTransformDirty;
                 },
             },
 
@@ -192,7 +225,8 @@ const applyDirtyMembers =
 
         // indicates that the position, scale, rotation has changed
         // and the local and world matrices need to be updated.
-        obj.transformDirty = false;
+        obj.localTransformDirty = false;
+        obj.worldTransformDirty = false;
 
         // indicates that the transform has changed and the bounds are
         // out of sync
@@ -205,14 +239,14 @@ const applyDirtyMembers =
         const ogRotationChange = obj.rotation.onChangeCallback.bind(obj.rotation);
         obj.rotation.onChange(() => {
             ogRotationChange();
-            obj.setTransformDirty();
+            obj.setLocalTransformDirty();
         });
 
         // Quaternion
         const ogQuaternionChange = obj.quaternion.onChangeCallback.bind(obj.quaternion);
         obj.quaternion.onChange(() => {
             ogQuaternionChange();
-            obj.setTransformDirty();
+            obj.setLocalTransformDirty();
         });
 
         // Position
