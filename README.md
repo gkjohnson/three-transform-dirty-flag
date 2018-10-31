@@ -32,14 +32,14 @@ ApplyDirtyTransform(scene);
   DefaultDirtyTracker
     .dirtyTransforms
     .forEach(o => { /* ... */ });
-  
+
   // Update the transforms and bounds of every changed
   // and affected object.
   DefaultDirtyTracker.updateAll();
 
   renderer.render(scene, camera);
   requestAnimationFrame(render);
-  
+
 })();
 ```
 
@@ -71,7 +71,7 @@ The `DirtyTracker` that is tracking the changes to this object.
 #### Methods
 ##### constructor()
 
-Same as the `Object3D` constructor. 
+Same as the `Object3D` constructor.
 
 ##### updateTransform()
 
@@ -105,7 +105,7 @@ Updates the transforms of all objects with a dirty transform matrix.
 
 ##### updateAllBounds()
 
-Updates the bounds of all objects with dirty bounds. Calling `updateTransform` can dirty bounds so this should typically be called after `updateAllTransforms()`.
+Updates the bounds of all objects with dirty bounds.
 
 #### Override-able Methods
 ##### onTransformDirty(obj)
