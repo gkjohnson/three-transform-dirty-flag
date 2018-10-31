@@ -2,10 +2,9 @@ import { Box3, Sphere } from 'three';
 import { getActiveDirtyTracker } from './DirtyTracker.js';
 import { expandBox } from './utils.js';
 
-// TODO: This will not interop with the current THREE.Object3D object because it
-// assumes that all the new fields are available
+const uniqueKey = '__dirtyObject3D__';
 
-function bindUpdateToField(self, obj, field) {
+const bindUpdateToField = (self, obj, field) => {
 
     const str = `_${ field }`;
     Object.defineProperty(obj, field, {
@@ -162,6 +161,13 @@ const dirtyTransformFunctions = {
 
 const applyDirtyMembers =
     obj => {
+
+        if (obj[uniqueKey]) {
+            console.warn('DirtyObject3D: Object has already had dirty transform members applied.', obj);
+            return;
+        }
+
+        obj[uniqueKey] = true;
 
         // Add the member functions
         Object.assign(obj, dirtyTransformFunctions);
