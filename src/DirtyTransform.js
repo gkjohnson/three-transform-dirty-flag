@@ -19,7 +19,7 @@ const DirtyTransformMixin =
 const ApplyDirtyTransform = (obj, dirtyTracker = null) => {
 
     const ogDt = getActiveDirtyTracker();
-    dirtyTracker = dirtyTracker || ogDt();
+    dirtyTracker = dirtyTracker || ogDt;
 
     setActiveDirtyTracker(dirtyTracker);
 

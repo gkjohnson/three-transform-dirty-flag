@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rollup -c",
     "lint": "eslint ./src/**/*.js",
-    "test": "rollup -c && jest"
+    "test": "rollup -c && jest",
+    "benchmark": "rollup -c && node ./benchmark/index.js"
   },
   "repository": {
     "type": "git",

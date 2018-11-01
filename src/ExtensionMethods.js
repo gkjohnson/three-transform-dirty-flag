@@ -236,8 +236,9 @@ const applyDirtyMembers =
 
         // indicates that the transform has changed and the bounds are
         // out of sync
-        obj.boundsDirty = true;
-        obj.updateBounds();
+        obj.boundsDirty = false;
+        obj._boundingBox = new Box3();
+        obj._boundingSphere = new Sphere();
 
         // Add change callbacks
         // Watch for dirty changes to the transform

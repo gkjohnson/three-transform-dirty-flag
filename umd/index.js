@@ -91,10 +91,9 @@
         }
     }
 
-    // TODO: This will not interop with the current THREE.Object3D object because it
-    // assumes that all the new fields are available
+    const uniqueKey = '__dirtyObject3D__';
 
-    function bindUpdateToField(self, obj, field) {
+    const bindUpdateToField = (self, obj, field) => {
 
         const str = `_${ field }`;
         Object.defineProperty(obj, field, {
@@ -110,7 +109,7 @@
 
         });
 
-    }
+    };
 
     const dirtyTransformFunctions = {
 
@@ -252,6 +251,13 @@
     const applyDirtyMembers =
         obj => {
 
+            if (obj[uniqueKey]) {
+                console.warn('DirtyObject3D: Object has already had dirty transform members applied.', obj);
+                return;
+            }
+
+            obj[uniqueKey] = true;
+
             // Add the member functions
             Object.assign(obj, dirtyTransformFunctions);
 
@@ -319,8 +325,9 @@
 
             // indicates that the transform has changed and the bounds are
             // out of sync
-            obj.boundsDirty = true;
-            obj.updateBounds();
+            obj.boundsDirty = false;
+            obj._boundingBox = new three.Box3();
+            obj._boundingSphere = new three.Sphere();
 
             // Add change callbacks
             // Watch for dirty changes to the transform
@@ -367,7 +374,7 @@
     const ApplyDirtyTransform = (obj, dirtyTracker = null) => {
 
         const ogDt = getActiveDirtyTracker();
-        dirtyTracker = dirtyTracker || ogDt();
+        dirtyTracker = dirtyTracker || ogDt;
 
         setActiveDirtyTracker(dirtyTracker);
 
@@ -387,6 +394,7 @@
     exports.getActiveDirtyTracker = getActiveDirtyTracker;
     exports.DirtyTransformMixin = DirtyTransformMixin;
     exports.DirtyObject3D = DirtyObject3D;
+    exports.ApplyDirtyTransform = ApplyDirtyTransform;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

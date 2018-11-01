@@ -1,5 +1,5 @@
 import { DirtyTracker, DefaultDirtyTracker, setActiveDirtyTracker, getActiveDirtyTracker } from './DirtyTracker.js';
-import { DirtyTransformMixin, DirtyObject3D } from './DirtyTransform.js';
+import { DirtyTransformMixin, DirtyObject3D, ApplyDirtyTransform } from './DirtyTransform.js';
 
 export {
 
@@ -10,5 +10,6 @@ export {
 
     DirtyTransformMixin,
     DirtyObject3D,
+    ApplyDirtyTransform,
 
 };
