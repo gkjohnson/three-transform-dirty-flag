@@ -3,7 +3,11 @@
 [![travis build](https://img.shields.io/travis/gkjohnson/threejs-transform-dirty-flag.svg?style=flat-square)](https://travis-ci.org/gkjohnson/threejs-transform-dirty-flag)
 [![lgtm code quality](https://img.shields.io/lgtm/grade/javascript/g/gkjohnson/threejs-transform-dirty-flag.svg?style=flat-square&label=code-quality)](https://lgtm.com/projects/g/gkjohnson/threejs-transform-dirty-flag/)
 
-Extension for efficiently keeping matrices and bounds up to date.
+**In Progress: Does not improve performance (yet?).**
+
+**Adding setters and getters to the position and scale fields dramatic decreases the performance of modifying the vectors, so that approach cannot be used. It's possible that adding an OnChange field to the fields (similar to the rotation and quaternion fields) could help with this.**
+
+Experimental extension for efficiently keeping matrices and bounds up to date.
 
 ## Use
 
