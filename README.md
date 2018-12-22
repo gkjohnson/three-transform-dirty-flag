@@ -5,7 +5,7 @@
 
 **In Progress: Does not improve performance (yet?).**
 
-**Adding setters and getters to the position and scale fields dramatic decreases the performance of modifying the vectors, so that approach cannot be used. It's possible that adding an OnChange field to the fields (similar to the rotation and quaternion fields) could help with this.**
+**Adding setters and getters to the position and scale fields dramaticly decreases the performance of modifying the vectors, so that approach cannot be used. It's possible that adding an OnChange field to the fields (similar to the rotation and quaternion fields) could help with this.**
 
 Experimental extension for efficiently keeping matrices and bounds up to date.
 
